@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a73e8">
+    <meta name="description" content="RoadLink - Connect with nearby drivers in real-time">
+    
+    <title>RoadLink - Driver Communication</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <!-- Leaflet CSS for maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #1a73e8;
+            --secondary-color: #34a853;
+            --danger-color: #ea4335;
+            --warning-color: #fbbc04;
+            --dark-bg: #202124;
+            --card-bg: #292a2d;
+            --text-primary: #e8eaed;
+            --text-secondary: #9aa0a6;
+            --border-color: #3c4043;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: var(--card-bg);
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--danger-color);
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.active {
+            background: var(--secondary-color);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .toggle-btn {
+            padding: 0.5rem 1rem;
+            background: var(--primary-color);
+            border: none;
+            border-radius: 20px;
+            color: white;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .toggle-btn:hover {
+            background: #1557b0;
+            transform: scale(1.05);
+        }
+
+        .toggle-btn.active {
+            background: var(--secondary-color);
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        /* Setup Screen */
+        .setup-screen {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+            max-width: 500px;
+            margin: 4rem auto;
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .setup-screen.active {
+            display: block;
+        }
+
+        .setup-screen h2 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .setup-screen p {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--dark-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 1rem;
+            background: var(--primary-color);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            background: #1557b0;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(26, 115, 232, 0.4);
+        }
+
+        /* Map Container */
+        .map-container {
+            display: none;
+            margin-bottom: 1rem;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .map-container.active {
+            display: block;
+        }
+
+        #map {
+            height: 400px;
+            width: 100%;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: none;
+            background: var(--card-bg);
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border-color);
+            display: none;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .stats-bar.active {
+            display: grid;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        /* Voice Control */
+        .voice-control {
+            display: none;
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .voice-control.active {
+            display: block;
+        }
+
+        .voice-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            border: none;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(26, 115, 232, 0.4);
+            margin: 1rem auto;
+            display: block;
+        }
+
+        .voice-btn:hover {
+            transform: scale(1.1);
+            background: #1557b0;
+        }
+
+        .voice-btn.listening {
+            background: var(--danger-color);
+            animation: pulse-mic 1s infinite;
+        }
+
+        @keyframes pulse-mic {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .voice-status {
+            margin-top: 1rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Quick Messages */
+        .quick-messages {
+            display: none;
+            margin-bottom: 1rem;
+        }
+
+        .quick-messages.active {
+            display: block;
+        }
+
+        .quick-messages h3 {
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .quick-msg-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .quick-msg-btn {
+            padding: 0.75rem;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .quick-msg-btn:hover {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .quick-msg-btn .emoji {
+            font-size: 1.5rem;
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        /* Chat Container */
+        .chat-container {
+            display: none;
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+
+        .chat-container.active {
+            display: block;
+        }
+
+        .chat-header {
+            padding: 1rem;
+            background: var(--dark-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-header h3 {
+            font-size: 1.1rem;
+            color: var(--text-primary);
+        }
+
+        .nearby-count {
+            background: var(--primary-color);
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+        }
+
+        .chat-messages {
+            height: 300px;
+            overflow-y: auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .message {
+            padding: 0.75rem;
+            border-radius: 8px;
+            max-width: 80%;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.own {
+            background: var(--primary-color);
+            align-self: flex-end;
+            margin-left: auto;
+        }
+
+        .message.other {
+            background: var(--dark-bg);
+            align-self: flex-start;
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.25rem;
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        .message-sender {
+            font-weight: 600;
+        }
+
+        .message-distance {
+            color: var(--text-secondary);
+        }
+
+        .message-text {
+            line-height: 1.4;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 0.5rem;
+            padding: 1rem;
+            background: var(--dark-bg);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 0.75rem;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .chat-input input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .send-btn {
+            padding: 0.75rem 1.5rem;
+            background: var(--primary-color);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .send-btn:hover {
+            background: #1557b0;
+        }
+
+        /* Nearby Drivers List */
+        .nearby-drivers {
+            display: none;
+            background: var(--card-bg);
+            padding: 1rem;
+            border-radius: 12px;
+            margin-top: 1rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .nearby-drivers.active {
+            display: block;
+        }
+
+        .nearby-drivers h3 {
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .driver-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .driver-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background: var(--dark-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .driver-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .driver-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .driver-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .driver-reg {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .driver-distance {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Alerts */
+        .alert {
+            position: fixed;
+            top: 80px;
+            right: 1rem;
+            padding: 1rem 1.5rem;
+            background: var(--secondary-color);
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            animation: slideInRight 0.3s;
+            z-index: 1001;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .alert.error {
+            background: var(--danger-color);
+        }
+
+        .alert.warning {
+            background: var(--warning-color);
+        }
+
+        /* Loading */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0.5rem;
+            }
+
+            #map {
+                height: 300px;
+            }
+
+            .chat-messages {
+                height: 250px;
+            }
+
+            .quick-msg-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Install Prompt */
+        .install-prompt {
+            display: none;
+            position: fixed;
+            bottom: 1rem;
+            left: 1rem;
+            right: 1rem;
+            background: var(--card-bg);
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid var(--primary-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            z-index: 1002;
+        }
+
+        .install-prompt.active {
+            display: block;
+            animation: slideUp 0.3s;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .install-prompt-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .install-prompt-text {
+            flex: 1;
+        }
+
+        .install-prompt-text h4 {
+            margin-bottom: 0.25rem;
+            color: var(--primary-color);
+        }
+
+        .install-prompt-text p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .install-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-install {
+            padding: 0.5rem 1rem;
+            background: var(--primary-color);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 0.9rem;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .btn-dismiss {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">
+                🚗 RoadLink
+                <div class="status-indicator" id="statusIndicator"></div>
+            </div>
+            <button class="toggle-btn" id="toggleBtn">Go Online</button>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Setup Screen -->
+        <div class="setup-screen active" id="setupScreen">
+            <h2>🚗 Welcome to RoadLink</h2>
+            <p>Connect with nearby drivers in real-time. Share alerts, travel in convoy, or just chat on the road.</p>
+            
+            <div class="input-group">
+                <label for="vehicleReg">Vehicle Registration (Optional)</label>
+                <input type="text" id="vehicleReg" placeholder="e.g., ABC 123" maxlength="10">
+            </div>
+
+            <div class="input-group">
+                <label for="username">Display Name</label>
+                <input type="text" id="username" placeholder="e.g., Driver Mike" required>
+            </div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="showReg" checked>
+                <label for="showReg">Show my vehicle registration to others</label>
+            </div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="voiceEnabled" checked>
+                <label for="voiceEnabled">Enable voice commands</label>
+            </div>
+
+            <button class="btn-primary" id="startBtn">Start RoadLink</button>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar" id="statsBar">
+            <div class="stat">
+                <div class="stat-value" id="nearbyCount">0</div>
+                <div class="stat-label">Nearby Drivers</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="rangeValue">5 km</div>
+                <div class="stat-label">Range</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="messagesCount">0</div>
+                <div class="stat-label">Messages</div>
+            </div>
+        </div>
+
+        <!-- Map Container -->
+        <div class="map-container" id="mapContainer">
+            <div id="map"></div>
+        </div>
+
+        <!-- Voice Control -->
+        <div class="voice-control" id="voiceControl">
+            <h3>Voice Commands</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                Say "Open Chat" to activate
+            </p>
+            <button class="voice-btn" id="voiceBtn">🎤</button>
+            <div class="voice-status" id="voiceStatus">Tap microphone or say "Open Chat"</div>
+        </div>
+
+        <!-- Quick Messages -->
+        <div class="quick-messages" id="quickMessages">
+            <h3>Quick Alerts</h3>
+            <div class="quick-msg-grid">
+                <button class="quick-msg-btn" data-msg="Your tail light is out!">
+                    <span class="emoji">💡</span>
+                    Lights Out
+                </button>
+                <button class="quick-msg-btn" data-msg="Slow down, hazard ahead!">
+                    <span class="emoji">⚠️</span>
+                    Hazard Ahead
+                </button>
+                <button class="quick-msg-btn" data-msg="Want to convoy?">
+                    <span class="emoji">🚛</span>
+                    Convoy?
+                </button>
+                <button class="quick-msg-btn" data-msg="Thanks!">
+                    <span class="emoji">👍</span>
+                    Thanks
+                </button>
+                <button class="quick-msg-btn" data-msg="Need assistance">
+                    <span class="emoji">🆘</span>
+                    Need Help
+                </button>
+                <button class="quick-msg-btn" data-msg="Rest stop ahead">
+                    <span class="emoji">☕</span>
+                    Rest Stop
+                </button>
+            </div>
+        </div>
+
+        <!-- Chat Container -->
+        <div class="chat-container" id="chatContainer">
+            <div class="chat-header">
+                <h3>Local Channel</h3>
+                <span class="nearby-count" id="chatNearbyCount">0 nearby</span>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="message other">
+                    <div class="message-header">
+                        <span class="message-sender">System</span>
+                    </div>
+                    <div class="message-text">Welcome to RoadLink! You're now connected to nearby drivers.</div>
+                </div>
+            </div>
+            <div class="chat-input">
+                <input type="text" id="messageInput" placeholder="Type a message...">
+                <button class="send-btn" id="sendBtn">Send</button>
+            </div>
+        </div>
+
+        <!-- Nearby Drivers -->
+        <div class="nearby-drivers" id="nearbyDrivers">
+            <h3>Nearby Drivers</h3>
+            <div class="driver-list" id="driverList">
+                <!-- Drivers will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Install Prompt -->
+    <div class="install-prompt" id="installPrompt">
+        <div class="install-prompt-content">
+            <div class="install-prompt-text">
+                <h4>Install RoadLink</h4>
+                <p>Get the full app experience on your device</p>
+            </div>
+            <div class="install-buttons">
+                <button class="btn-install" id="installBtn">Install</button>
+                <button class="btn-dismiss" id="dismissBtn">Later</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Main App Script -->
+    <script src="app.js"></script>
+
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('Service Worker registered'))
+                    .catch(err => console.log('Service Worker registration failed'));
+            });
+        }
+    </script>
+</body>
+</html>
