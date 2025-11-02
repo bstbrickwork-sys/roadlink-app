@@ -693,7 +693,38 @@
         }
     </style>
 </head>
-<body>
+<body><!-- WELCOME OVERLAY (Shows on first visit) -->
+<div id="welcomeOverlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: white; padding: 30px; border-radius: 15px; max-width: 500px; text-align: center;">
+        <div style="font-size: 48px; margin-bottom: 20px;">🚗🚛</div>
+        <h2 style="color: #333; margin-bottom: 15px;">Welcome to RoadLink Beta!</h2>
+        <p style="color: #666; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+            This is a <strong>UI demonstration</strong> showing how RoadLink will work.
+            <br><br>
+            You'll see simulated nearby drivers and features to give you a feel for the app.
+            <br><br>
+            <strong>Real-time features with actual users launch November 15th!</strong>
+        </p>
+        <button onclick="closeWelcome()" style="background: #ff6b35; color: white; border: none; padding: 15px 40px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer;">
+            Got It - Show Me The Demo!
+        </button>
+        <div style="margin-top: 15px;">
+            <a href="https://forms.gle/cqNhJ1LZfg6XXoEh9" style="color: #2196F3; font-size: 14px; text-decoration: none;">Join waitlist for launch day →</a>
+        </div>
+    </div>
+</div>
+
+<script>
+// Show welcome overlay on first visit only
+if (!localStorage.getItem('welcomeSeen')) {
+    document.getElementById('welcomeOverlay').style.display = 'flex';
+}
+
+function closeWelcome() {
+    document.getElementById('welcomeOverlay').style.display = 'none';
+    localStorage.setItem('welcomeSeen', 'true');
+}
+</script>
     <!-- BETA BANNER --><!-- DEMO NOTICE -->
 <div style="background: #2196F3; color: white; padding: 15px 20px; text-align: center; font-family: Arial, sans-serif; border-bottom: 3px solid #1976D2;">
     <div style="font-size: 16px; font-weight: 500; margin-bottom: 5px;">
