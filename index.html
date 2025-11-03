@@ -953,12 +953,14 @@ function closeWelcome() {
 // Auto-start demo mode for beta testing
 window.addEventListener('load', () => {
     // Check if user dismissed welcome overlay
-    if (localStorage.getItem('welcomeSeen')) {
+    if (localStorage.getItem('welcomeSeen') && !localStorage.getItem('demoStarted')) {
         // Auto-populate demo user
         document.getElementById('username').value = 'Demo User';
         // Auto-click start button after 1 second
         setTimeout(() => {
-            document.getElementById('startBtn').click();
+            document.getElementById('startBtn').click();setTimeout(() => {
+    document.getElementById('startBtn').click();
+    localStorage.setItem('demoStarted', 'true'); 
         }, 1000);
     }
 });
