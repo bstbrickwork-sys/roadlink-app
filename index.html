@@ -949,5 +949,18 @@ function closeWelcome() {
 <!-- DEMO MODE BADGE -->
 <div style="position: fixed; bottom: 20px; right: 20px; background: #2196F3; color: white; padding: 10px 20px; border-radius: 25px; font-size: 14px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 999;">
     📱 DEMO MODE
-</div></body>
+</div><script>
+// Auto-start demo mode for beta testing
+window.addEventListener('load', () => {
+    // Check if user dismissed welcome overlay
+    if (localStorage.getItem('welcomeSeen')) {
+        // Auto-populate demo user
+        document.getElementById('username').value = 'Demo User';
+        // Auto-click start button after 1 second
+        setTimeout(() => {
+            document.getElementById('startBtn').click();
+        }, 1000);
+    }
+});
+</script> </body>
 </html>
