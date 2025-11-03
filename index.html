@@ -692,6 +692,35 @@
             cursor: pointer;
         }
     </style>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+  import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+  import { getDatabase } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+  
+  const firebaseConfig = {
+    apiKey: "AIzaSyCA9xq8d_y8sj_s7jypt7stkHO8Pv8U_h4",
+    authDomain: "roadlink-6a622.firebaseapp.com",
+    databaseURL: "https://roadlink-6a622-default-rtdb.firebaseio.com",
+    projectId: "roadlink-6a622",
+    storageBucket: "roadlink-6a622.firebasestorage.app",
+    messagingSenderId: "982552375234",
+    appId: "1:982552375234:web:8a13e5b49261993d43b05b"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  window.firebaseAuth = getAuth(app);
+  window.firebaseDB = getDatabase(app);
+  console.log("🔥 Firebase ready!");
+</script>
+
+
+
+
+
+
+
+
+
 </head>
 <body><!-- WELCOME OVERLAY (Shows on first visit) -->
 <div id="welcomeOverlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;">
