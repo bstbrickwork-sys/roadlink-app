@@ -754,9 +754,7 @@ function closeWelcome() {
     localStorage.setItem('welcomeSeen', 'true');
 }
 </script>
-    // RoadLink Authentication System
-// Uses Firebase Auth + Realtime Database
-
+ 
 import { 
     createUserWithEmailAndPassword, 
     signInWithEmailAndPassword,
@@ -850,16 +848,7 @@ export async function getUserProfile(database, userId) {
         const snapshot = await get(child(ref(database), `users/${userId}`));
         
         if (snapshot.exists()) {
-            return { success: true, data: snapshot.val() };
-        } else {
-            return { success: false, error: "User profile not found" };
-        }
         
-    } catch (error) {
-        console.error("❌ Get profile error:", error.message);
-        return { success: false, error: error.message };
-    }
-}
 
 // Update user status (online/offline)
 export async function updateUserStatus(database, userId, status) {
