@@ -1058,16 +1058,6 @@ export async function updateUserStatus(database, userId, status) {
 <!-- DEMO MODE BADGE -->
 <div style="position: fixed; bottom: 20px; right: 20px; background: #2196F3; color: white; padding: 10px 20px; border-radius: 25px; font-size: 14px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 999;">
     📱 DEMO MODE
-</div><script>
-// Auto-start demo mode for beta testing
-window.addEventListener('load', () => {
-    if (localStorage.getItem('welcomeSeen') && !localStorage.getItem('demoStarted')) {
-        document.getElementById('username').value = 'Demo User';
-        setTimeout(() => {
-            document.getElementById('startBtn').click();
-            localStorage.setItem('demoStarted', 'true');
-        }, 1000);
-    }
-});
-</script> </body>
+</div>
+ </body>
 </html>
