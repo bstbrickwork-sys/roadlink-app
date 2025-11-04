@@ -754,7 +754,100 @@ function closeWelcome() {
     localStorage.setItem('welcomeSeen', 'true');
 }
 </script>
+<!-- AUTH SCREENS -->
+<div id="authContainer" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--dark-bg); z-index: 10000; display: none; overflow-y: auto;">
+    
+    <!-- SIGNUP SCREEN -->
+    <div id="signupScreen" class="auth-screen" style="display: none; max-width: 450px; margin: 50px auto; padding: 30px; background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color);">
+        <h2 style="color: var(--primary-color); margin-bottom: 10px; text-align: center;">Create Account</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 30px; text-align: center;">Join RoadLink - Connect with drivers</p>
+        
+        <div class="input-group">
+            <label>Email</label>
+            <input type="email" id="signupEmail" placeholder="your@email.com" style="width: 100%; padding: 12px; background: var(--dark-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 16px;">
+        </div>
+        
+        <div class="input-group">
+            <label>Password</label>
+            <input type="password" id="signupPassword" placeholder="Minimum 6 characters" style="width: 100%; padding: 12px; background: var(--dark-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 16px;">
+        </div>
+        
+        <div class="input-group">
+            <label>Display Name</label>
+            <input type="text" id="signupName" placeholder="e.g., Driver Mike" style="width: 100%; padding: 12px; background: var(--dark-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 16px;">
+        </div>
+        
+        <div class="input-group">
+            <label>Vehicle Registration (Optional)</label>
+            <input type="text" id="signupVehicleReg" placeholder="e.g., ABC 123" maxlength="10" style="width: 100%; padding: 12px; background: var(--dark-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 16px;">
+        </div>
+        
+        <div id="signupError" style="color: var(--danger-color); margin: 15px 0; text-align: center; display: none;"></div>
+        
+        <button id="signupBtn" style="width: 100%; padding: 15px; background: var(--primary-color); border: none; border-radius: 8px; color: white; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px;">
+            Create Account
+        </button>
+        
+        <p style="text-align: center; margin-top: 20px; color: var(--text-secondary);">
+            Already have an account? 
+            <a href="#" id="showLoginLink" style="color: var(--primary-color); text-decoration: none;">Log in</a>
+        </p>
+    </div>
+    
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="auth-screen" style="display: none; max-width: 450px; margin: 50px auto; padding: 30px; background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color);">
+        <h2 style="color: var(--primary-color); margin-bottom: 10px; text-align: center;">Welcome Back</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 30px; text-align: center;">Log in to RoadLink</p>
+        
+        <div class="input-group">
+            <label>Email</label>
+            <input type="email" id="loginEmail" placeholder="your@email.com" style="width: 100%; padding: 12px; background: var(--dark-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 16px;">
+        </div>
+        
+        <div class="input-group">
+            <label>Password</label>
+            <input type="password" id="loginPassword" placeholder="Your password" style="width: 100%; padding: 12px; background: var(--dark-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 16px;">
+        </div>
+        
+        <div id="loginError" style="color: var(--danger-color); margin: 15px 0; text-align: center; display: none;"></div>
+        
+        <button id="loginBtn" style="width: 100%; padding: 15px; background: var(--primary-color); border: none; border-radius: 8px; color: white; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px;">
+            Log In
+        </button>
+        
+        <p style="text-align: center; margin-top: 20px; color: var(--text-secondary);">
+            Don't have an account? 
+            <a href="#" id="showSignupLink" style="color: var(--primary-color); text-decoration: none;">Sign up</a>
+        </p>
+    </div>
+    
+</div>
 
+<style>
+/* Input group styles for auth screens */
+.auth-screen .input-group {
+    margin-bottom: 20px;
+}
+
+.auth-screen .input-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.auth-screen input:focus {
+    outline: none;
+    border-color: var(--primary-color) !important;
+}
+
+.auth-screen button:hover {
+    background: #1557b0;
+    transform: translateY(-2px);
+    transition: all 0.3s;
+}
+</style>
     <!-- BETA BANNER --><!-- DEMO NOTICE -->
 <div style="background: #2196F3; color: white; padding: 15px 20px; text-align: center; font-family: Arial, sans-serif; border-bottom: 3px solid #1976D2;">
     <div style="font-size: 16px; font-weight: 500; margin-bottom: 5px;">
