@@ -15,6 +15,7 @@ class RoadLinkApp {
         this.range = 5000; // 5km in meters
         
         this.init();
+        this.backend = window.FirebaseBackend ? new window.FirebaseBackend() : null;
     }
 
     init() {
@@ -249,22 +250,65 @@ class RoadLinkApp {
         );
     }
 
-    toggleOnline() {
-        this.isOnline = !this.isOnline;
-        
-        if (this.isOnline) {
-            this.toggleBtn.textContent = 'Go Offline';
-            this.toggleBtn.classList.add('active');
-            this.statusIndicator.classList.add('active');
-            this.showAlert('You are now online and visible', 'success');
-        } else {
-            this.toggleBtn.textContent = 'Go Online';
-            this.toggleBtn.classList.remove('active');
-            this.statusIndicator.classList.remove('active');
-            this.showAlert('You are now offline', 'warning');
-        }
-    }
+  async toggleOnline() {
+    this.isOnline = !this.isOnline;
+    
+    if (this.isOnline) {
+        this.toggleBtn.textContent = 'Go Offline';
+        this.toggleBtn.classList.add('active');
+        this.statusIndicator.classList.add('active');
+        this.showAlert('You are now online and visible', 'success');
 
+        // Start updating location to Firebase every 5 seconds
+        if (this.backend && this.backend.currentUserId) {
+            this.locationUpdateInterval = setInterval(() => {
+                if (this.currentLocation && this.isOnline) {
+                    this.backend.updateLocation(
+                        this.backend.currentUserId,
+                        this.currentLocation,
+                        this.userData
+                    );
+                }
+            }, 5000);
+
+            // Watch nearby drivers from Firebase
+            this.backend.watchNearbyDrivers(this.currentLocation, this.range, (drivers) => {
+                this.nearbyDrivers = drivers;
+                this.updateDriversList();
+                this.nearbyCount.textContent = drivers.length;
+                this.chatNearbyCount.textContent = `${drivers.length} nearby`;
+            });
+
+            // Watch nearby messages from Firebase
+            this.backend.watchNearbyMessages(this.currentLocation, this.range, (message) => {
+                this.addMessage(message);
+                this.messageCount++;
+                this.messagesCount.textContent = this.messageCount;
+            });
+        }
+    } else {
+        this.toggleBtn.textContent = 'Go Online';
+        this.toggleBtn.classList.remove('active');
+        this.statusIndicator.classList.remove('active');
+        this.showAlert('You are now offline', 'warning');
+
+        // Stop location updates
+        if (this.locationUpdateInterval) {
+            clearInterval(this.locationUpdateInterval);
+        }
+
+        // Mark offline in Firebase
+        if (this.backend && this.backend.currentUserId) {
+            await this.backend.setOffline(this.backend.currentUserId);
+            this.backend.cleanup();
+        }
+
+        // Clear nearby drivers
+        this.nearbyDrivers = [];
+        this.driverMarkers.forEach(marker => this.map.removeLayer(marker));
+        this.driverMarkers.clear();
+    }
+}
     // Voice Recognition
     initVoiceRecognition() {
         if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
@@ -321,10 +365,20 @@ class RoadLinkApp {
     }
 
     // Messaging
-    sendMessage() {
-        const text = this.messageInput.value.trim();
-        if (!text) return;
+    async sendMessage() {
+    const text = this.messageInput.value.trim();
+    if (!text) return;
 
+    // Send to Firebase
+    if (this.backend && this.backend.currentUserId && this.currentLocation) {
+        await this.backend.sendMessage(
+            this.backend.currentUserId,
+            text,
+            this.currentLocation,
+            this.userData
+        );
+    } else {
+        // Fallback if Firebase not ready
         this.addMessage({
             id: Date.now(),
             sender: this.userData.username,
@@ -334,16 +388,19 @@ class RoadLinkApp {
             isOwn: true,
             distance: 0
         });
-
-        this.messageInput.value = '';
-        this.messageCount++;
-        this.messagesCount.textContent = this.messageCount;
-
-        // In production, send to server/other users
-        this.broadcastMessage(text);
     }
 
-    sendQuickMessage(text) {
+    this.messageInput.value = '';
+}
+    async sendQuickMessage(text) {
+    if (this.backend && this.backend.currentUserId && this.currentLocation) {
+        await this.backend.sendMessage(
+            this.backend.currentUserId,
+            text,
+            this.currentLocation,
+            this.userData
+        );
+    } else {
         this.addMessage({
             id: Date.now(),
             sender: this.userData.username,
@@ -353,51 +410,39 @@ class RoadLinkApp {
             isOwn: true,
             distance: 0
         });
-
-        this.messageCount++;
-        this.messagesCount.textContent = this.messageCount;
-        this.showAlert('Quick message sent!', 'success');
-
-        this.broadcastMessage(text);
     }
 
+    this.showAlert('Quick message sent!', 'success');
+}
     addMessage(message) {
-        const messageEl = document.createElement('div');
-        messageEl.className = `message ${message.isOwn ? 'own' : 'other'}`;
-        
-        const displayName = message.vehicleReg ? 
-            `${message.sender} (${message.vehicleReg})` : 
-            message.sender;
+    const messageEl = document.createElement('div');
+    messageEl.className = `message ${message.isOwn ? 'own' : 'other'}`;
+    
+    const displayName = message.vehicleReg ? 
+        `${message.sender} (${message.vehicleReg})` : 
+        message.sender;
 
-        messageEl.innerHTML = `
-            <div class="message-header">
-                <span class="message-sender">${displayName}</span>
-                ${!message.isOwn ? `<span class="message-distance">${this.formatDistance(message.distance)}</span>` : ''}
-            </div>
-            <div class="message-text">${this.escapeHtml(message.text)}</div>
-        `;
-
-        this.chatMessages.appendChild(messageEl);
-        this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+    // Handle Firebase timestamp objects
+    let timeDisplay = '';
+    if (message.timestamp) {
+        const date = message.timestamp.toDate ? message.timestamp.toDate() : new Date(message.timestamp);
+        timeDisplay = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
-    broadcastMessage(text) {
-        // In production, this would send via WebSocket/WebRTC to nearby drivers
-        // For demo, we'll simulate receiving responses
-        setTimeout(() => {
-            this.simulateIncomingMessage(text);
-        }, 2000 + Math.random() * 3000);
-    }
+    messageEl.innerHTML = `
+        <div class="message-header">
+            <span class="message-sender">${displayName}</span>
+            ${!message.isOwn ? `<span class="message-distance">${this.formatDistance(message.distance)}</span>` : ''}
+            ${timeDisplay ? `<span class="message-time">${timeDisplay}</span>` : ''}
+        </div>
+        <div class="message-text">${this.escapeHtml(message.text)}</div>
+    `;
 
-    simulateIncomingMessage(originalText) {
-        const responses = [
-            'Copy that!',
-            'Thanks for the heads up!',
-            'Roger that',
-            '10-4, good buddy!',
-            'Appreciated!',
-            'Will do, thanks!'
-        ];
+    this.chatMessages.appendChild(messageEl);
+    this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+}
+  }
+
 
         const randomDriver = this.nearbyDrivers[Math.floor(Math.random() * this.nearbyDrivers.length)];
         if (!randomDriver) return;
@@ -417,7 +462,7 @@ class RoadLinkApp {
     }
 
     // Nearby Drivers Simulation
-    simulateNearbyDrivers() {
+ 
         // In production, this would be real-time data from a server
         const driverNames = ['Trucker Joe', 'Lisa M', 'Mike R', 'Sarah K', 'Driver Bob'];
         const vehicles = ['TRK 456', 'CAR 789', 'VAN 123', 'SUV 321', 'PKP 555'];
@@ -491,11 +536,7 @@ class RoadLinkApp {
             this.driverList.appendChild(driverEl);
         });
     }
-
-    updateNearbyDrivers() {
-        // In production, this would fetch updated positions from server
-        // and update markers accordingly
-    }
+ }
 
     // Utilities
     formatDistance(meters) {
